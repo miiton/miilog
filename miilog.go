@@ -1,9 +1,12 @@
 package miilog
 
 import (
+	"net"
+	"net/http"
 	"net/url"
 	"os"
 	"path"
+	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -12,6 +15,21 @@ import (
 // SetLoggerProductionWithLokiMust set a logger for global.
 // Output: stdout with JSON and a Grafana Loki Server using protocol buffers.
 func SetLoggerProductionWithLokiMust(lokiURL, tenantID, labels string) {
+	client := &http.Client{
+		Transport: &http.Transport{
+			DialContext: (&net.Dialer{
+				Timeout:   5 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}).DialContext,
+			MaxIdleConns:          100,
+			MaxConnsPerHost:       100,
+			IdleConnTimeout:       30 * time.Second,
+			TLSHandshakeTimeout:   5 * time.Second,
+			ResponseHeaderTimeout: 5 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		},
+		Timeout: 5 * time.Second,
+	}
 	u, err := url.Parse(lokiURL)
 	if err != nil {
 		panic(err)
@@ -21,6 +39,7 @@ func SetLoggerProductionWithLokiMust(lokiURL, tenantID, labels string) {
 		URL:      u.String(),
 		TenantID: tenantID,
 		Labels:   labels,
+		Client:   client,
 	}
 	logger := zap.New(
 		zapcore.NewCore(

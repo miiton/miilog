@@ -2,6 +2,8 @@ package miilog
 
 import (
 	"bytes"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"sync"
 	"time"
@@ -17,6 +19,7 @@ type LokiSyncer struct {
 	TenantID  string
 	Labels    string
 	WaitGroup sync.WaitGroup
+	Client    *http.Client
 }
 
 // Write required by zapcore.WriteSyncer
@@ -53,12 +56,14 @@ func (ls *LokiSyncer) Push(message []byte) error {
 	if ls.TenantID != "" {
 		req.Header.Set("X-Scope-OrgID", ls.TenantID)
 	}
-	client := &http.Client{}
-	res, err := client.Do(req)
+	res, err := ls.Client.Do(req)
 	if err != nil {
 		return err
 	}
-	defer res.Body.Close()
+	defer func() {
+		io.Copy(ioutil.Discard, res.Body)
+		res.Body.Close()
+	}()
 	if err != nil {
 		return err
 	}
