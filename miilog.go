@@ -12,23 +12,55 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+var jsonEncoderConfig = zapcore.EncoderConfig{
+	TimeKey:        "ts",
+	LevelKey:       "level",
+	NameKey:        "logger",
+	CallerKey:      "caller",
+	FunctionKey:    zapcore.OmitKey,
+	MessageKey:     "msg",
+	StacktraceKey:  "stacktrace",
+	LineEnding:     zapcore.DefaultLineEnding,
+	EncodeLevel:    zapcore.LowercaseLevelEncoder,
+	EncodeTime:     zapcore.RFC3339NanoTimeEncoder,
+	EncodeDuration: zapcore.SecondsDurationEncoder,
+	EncodeCaller:   zapcore.ShortCallerEncoder,
+}
+
+var consoleEncoderConfig = zapcore.EncoderConfig{
+	TimeKey:        "ts",
+	LevelKey:       "level",
+	NameKey:        "logger",
+	CallerKey:      "caller",
+	FunctionKey:    zapcore.OmitKey,
+	MessageKey:     "msg",
+	StacktraceKey:  "stacktrace",
+	LineEnding:     zapcore.DefaultLineEnding,
+	EncodeLevel:    zapcore.LowercaseLevelEncoder,
+	EncodeTime:     zapcore.ISO8601TimeEncoder,
+	EncodeDuration: zapcore.SecondsDurationEncoder,
+	EncodeCaller:   zapcore.ShortCallerEncoder,
+}
+
+var transportConfig = &http.Transport{
+	DialContext: (&net.Dialer{
+		Timeout:   5 * time.Second,
+		KeepAlive: 30 * time.Second,
+	}).DialContext,
+	MaxIdleConns:          100,
+	MaxConnsPerHost:       100,
+	IdleConnTimeout:       30 * time.Second,
+	TLSHandshakeTimeout:   5 * time.Second,
+	ResponseHeaderTimeout: 5 * time.Second,
+	ExpectContinueTimeout: 1 * time.Second,
+}
+
 // SetLoggerProductionWithLokiMust set a logger for global.
 // Output: stdout with JSON and a Grafana Loki Server using protocol buffers.
 func SetLoggerProductionWithLokiMust(lokiURL, tenantID, labels string) {
 	client := &http.Client{
-		Transport: &http.Transport{
-			DialContext: (&net.Dialer{
-				Timeout:   5 * time.Second,
-				KeepAlive: 30 * time.Second,
-			}).DialContext,
-			MaxIdleConns:          100,
-			MaxConnsPerHost:       100,
-			IdleConnTimeout:       30 * time.Second,
-			TLSHandshakeTimeout:   5 * time.Second,
-			ResponseHeaderTimeout: 5 * time.Second,
-			ExpectContinueTimeout: 1 * time.Second,
-		},
-		Timeout: 5 * time.Second,
+		Transport: transportConfig,
+		Timeout:   5 * time.Second,
 	}
 	u, err := url.Parse(lokiURL)
 	if err != nil {
@@ -43,23 +75,43 @@ func SetLoggerProductionWithLokiMust(lokiURL, tenantID, labels string) {
 	}
 	logger := zap.New(
 		zapcore.NewCore(
-			zapcore.NewJSONEncoder(
-				zapcore.EncoderConfig{
-					TimeKey:        "ts",
-					LevelKey:       "level",
-					NameKey:        "logger",
-					CallerKey:      "caller",
-					FunctionKey:    zapcore.OmitKey,
-					MessageKey:     "msg",
-					StacktraceKey:  "stacktrace",
-					LineEnding:     zapcore.DefaultLineEnding,
-					EncodeLevel:    zapcore.LowercaseLevelEncoder,
-					EncodeTime:     zapcore.RFC3339NanoTimeEncoder,
-					EncodeDuration: zapcore.SecondsDurationEncoder,
-					EncodeCaller:   zapcore.ShortCallerEncoder,
-				},
-			),
+			zapcore.NewJSONEncoder(jsonEncoderConfig),
 			zapcore.NewMultiWriteSyncer(os.Stdout, lokiSyncer),
+			zap.NewAtomicLevelAt(zap.InfoLevel),
+		),
+		zap.AddCaller(),
+		zap.AddStacktrace(zap.ErrorLevel),
+	)
+	zap.ReplaceGlobals(logger)
+	setWrappers()
+}
+
+// SetLoggerProductionWithFileAndLokiMust set a logger for global.
+// Output: stdout with JSONFile and a Grafana Loki Server using protocol buffers.
+func SetLoggerProductionWithFileAndLokiMust(filePath, lokiURL, tenantID, labels string) {
+	f, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
+	if err != nil {
+		panic(err)
+	}
+	client := &http.Client{
+		Transport: transportConfig,
+		Timeout:   5 * time.Second,
+	}
+	u, err := url.Parse(lokiURL)
+	if err != nil {
+		panic(err)
+	}
+	u.Path = path.Join(u.Path, "loki", "api", "v1", "push")
+	lokiSyncer := &LokiSyncer{
+		URL:      u.String(),
+		TenantID: tenantID,
+		Labels:   labels,
+		Client:   client,
+	}
+	logger := zap.New(
+		zapcore.NewCore(
+			zapcore.NewJSONEncoder(jsonEncoderConfig),
+			zapcore.NewMultiWriteSyncer(os.Stdout, zapcore.AddSync(f), lokiSyncer),
 			zap.NewAtomicLevelAt(zap.InfoLevel),
 		),
 		zap.AddCaller(),
@@ -79,21 +131,8 @@ func SetLoggerProductionMust() {
 			Initial:    100,
 			Thereafter: 100,
 		},
-		Encoding: "json",
-		EncoderConfig: zapcore.EncoderConfig{
-			TimeKey:        "ts",
-			LevelKey:       "level",
-			NameKey:        "logger",
-			CallerKey:      "caller",
-			FunctionKey:    zapcore.OmitKey,
-			MessageKey:     "msg",
-			StacktraceKey:  "stacktrace",
-			LineEnding:     zapcore.DefaultLineEnding,
-			EncodeLevel:    zapcore.LowercaseLevelEncoder,
-			EncodeTime:     zapcore.RFC3339NanoTimeEncoder,
-			EncodeDuration: zapcore.SecondsDurationEncoder,
-			EncodeCaller:   zapcore.ShortCallerEncoder,
-		},
+		Encoding:         "json",
+		EncoderConfig:    jsonEncoderConfig,
 		OutputPaths:      []string{"stdout"},
 		ErrorOutputPaths: []string{"stderr"},
 	}
@@ -115,21 +154,8 @@ func SetLoggerDevelopmentMust() {
 			Initial:    100,
 			Thereafter: 100,
 		},
-		Encoding: "console",
-		EncoderConfig: zapcore.EncoderConfig{
-			TimeKey:        "ts",
-			LevelKey:       "level",
-			NameKey:        "logger",
-			CallerKey:      "caller",
-			FunctionKey:    zapcore.OmitKey,
-			MessageKey:     "msg",
-			StacktraceKey:  "stacktrace",
-			LineEnding:     zapcore.DefaultLineEnding,
-			EncodeLevel:    zapcore.CapitalLevelEncoder,
-			EncodeTime:     zapcore.ISO8601TimeEncoder,
-			EncodeDuration: zapcore.SecondsDurationEncoder,
-			EncodeCaller:   zapcore.ShortCallerEncoder,
-		},
+		Encoding:         "console",
+		EncoderConfig:    consoleEncoderConfig,
 		OutputPaths:      []string{"stdout"},
 		ErrorOutputPaths: []string{"stderr"},
 	}
