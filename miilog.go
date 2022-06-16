@@ -142,6 +142,7 @@ func SetLoggerDevelopmentMust() {
 }
 
 var (
+	Sync   func() error
 	Debug  func(args ...interface{})
 	Debugw func(msg string, keysAndValues ...interface{})
 	Debugf func(template string, args ...interface{})
@@ -160,6 +161,7 @@ var (
 )
 
 func setWrappers() {
+	Sync = zap.S().Sync
 	Debug = zap.S().Debug
 	Debugw = zap.S().Debugw
 	Debugf = zap.S().Debugf

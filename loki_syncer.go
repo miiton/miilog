@@ -23,17 +23,19 @@ type LokiSyncer struct {
 }
 
 // Write required by zapcore.WriteSyncer
-func (ls *LokiSyncer) Write(p []byte) (n int, err error) {
+func (ls *LokiSyncer) Write(entry []byte) (n int, err error) {
 	ls.WaitGroup.Add(1)
-	go func(p []byte) {
+	c := make([]byte, len(entry))
+	n = copy(c, entry)
+	go func(s []byte) {
 		defer ls.WaitGroup.Done()
-		err = ls.Push(p)
+		err = ls.Push(s)
 		if err != nil {
 			println(err)
 		}
 		return
-	}(p)
-	return len(p), nil
+	}(c)
+	return n, nil
 }
 
 // Sync waits processing push jobs when zap.S().Sync() called. Required by zapcore.WriteSyncer.
