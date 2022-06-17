@@ -6,11 +6,14 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
+
+var logLevel zapcore.Level
 
 var jsonEncoderConfig = zapcore.EncoderConfig{
 	TimeKey:        "ts",
@@ -78,7 +81,7 @@ func SetLoggerProductionWithLokiMust(lokiURL, tenantID, labels string) {
 		zapcore.NewCore(
 			zapcore.NewJSONEncoder(jsonEncoderConfig),
 			zapcore.NewMultiWriteSyncer(os.Stdout, lokiSyncer),
-			zap.NewAtomicLevelAt(zap.InfoLevel),
+			zap.NewAtomicLevelAt(logLevel),
 		),
 		zap.AddCaller(),
 		zap.AddStacktrace(zap.ErrorLevel),
@@ -113,7 +116,7 @@ func SetLoggerProductionWithFileAndLokiMust(filePath, lokiURL, tenantID, labels 
 		zapcore.NewCore(
 			zapcore.NewJSONEncoder(jsonEncoderConfig),
 			zapcore.NewMultiWriteSyncer(os.Stdout, zapcore.AddSync(f), lokiSyncer),
-			zap.NewAtomicLevelAt(zap.InfoLevel),
+			zap.NewAtomicLevelAt(logLevel),
 		),
 		zap.AddCaller(),
 		zap.AddStacktrace(zap.ErrorLevel),
@@ -126,7 +129,7 @@ func SetLoggerProductionWithFileAndLokiMust(filePath, lokiURL, tenantID, labels 
 // Output: stdout with JSON.
 func SetLoggerProductionMust() {
 	cfg := zap.Config{
-		Level:       zap.NewAtomicLevelAt(zap.InfoLevel),
+		Level:       zap.NewAtomicLevelAt(logLevel),
 		Development: false,
 		Sampling: &zap.SamplingConfig{
 			Initial:    100,
@@ -149,8 +152,8 @@ func SetLoggerProductionMust() {
 // Output: stdout with TextLine.
 func SetLoggerDevelopmentMust() {
 	cfg := zap.Config{
-		Level:       zap.NewAtomicLevelAt(zap.InfoLevel),
-		Development: false,
+		Level:       zap.NewAtomicLevelAt(logLevel),
+		Development: true,
 		Sampling: &zap.SamplingConfig{
 			Initial:    100,
 			Thereafter: 100,
@@ -204,4 +207,12 @@ func setWrappers() {
 	Fatal = zap.S().Fatal
 	Fatalw = zap.S().Fatalw
 	Fatalf = zap.S().Fatalf
+}
+
+func init() {
+	if strings.ToLower(os.Getenv("LOG_LEVEL")) == "debug" {
+		logLevel = zap.DebugLevel
+	} else {
+		logLevel = zap.InfoLevel
+	}
 }
