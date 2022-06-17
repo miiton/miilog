@@ -28,18 +28,19 @@ var jsonEncoderConfig = zapcore.EncoderConfig{
 }
 
 var consoleEncoderConfig = zapcore.EncoderConfig{
-	TimeKey:        "ts",
-	LevelKey:       "level",
-	NameKey:        "logger",
-	CallerKey:      "caller",
-	FunctionKey:    zapcore.OmitKey,
-	MessageKey:     "msg",
-	StacktraceKey:  "stacktrace",
-	LineEnding:     zapcore.DefaultLineEnding,
-	EncodeLevel:    zapcore.LowercaseLevelEncoder,
-	EncodeTime:     zapcore.ISO8601TimeEncoder,
-	EncodeDuration: zapcore.SecondsDurationEncoder,
-	EncodeCaller:   zapcore.ShortCallerEncoder,
+	TimeKey:          "ts",
+	LevelKey:         "level",
+	NameKey:          "logger",
+	CallerKey:        "caller",
+	FunctionKey:      zapcore.OmitKey,
+	MessageKey:       "msg",
+	StacktraceKey:    "stacktrace",
+	LineEnding:       zapcore.DefaultLineEnding,
+	EncodeLevel:      zapcore.CapitalColorLevelEncoder,
+	EncodeTime:       zapcore.TimeEncoderOfLayout("15:04:05.000000"),
+	EncodeDuration:   zapcore.SecondsDurationEncoder,
+	EncodeCaller:     zapcore.ShortCallerEncoder,
+	ConsoleSeparator: " ",
 }
 
 var transportConfig = &http.Transport{
