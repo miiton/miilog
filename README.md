@@ -15,6 +15,8 @@ func init() {
 	miilog.SetLoggerProductionMust()
 	// or miilog.SetLoggerDevelopmentMust()
 	// or miilog.SetLoggerProductionWithLokiMust("https://loki.example.com/", "MYTENANTID", "{source=\"mygo_source\", job=\"mygo_job\", host=\"awesomehost\"}")
+	// or miilog.SetLoggerProductionWithLokiMust("https://loki.example.com/", "MYTENANTID", "{source=\"mygo_source\", job=\"mygo_job\", host=\"awesomehost\"}")
+	// or miilog.SetLoggerProductionWithFileAndLokiMust("/var/log/hoge.log","https://loki.example.com/", "MYTENANTID", "{source=\"mygo_source\", job=\"mygo_job\", host=\"awesomehost\"}")
 }
 
 func main() {
