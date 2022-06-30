@@ -1,6 +1,8 @@
 package miilog
 
-import "testing"
+import (
+	"testing"
+)
 
 func Test_SetLoggerProductionMust(t *testing.T) {
 	SetLoggerProductionMust()
@@ -14,6 +16,10 @@ func Test_SetLoggerProductionMust(t *testing.T) {
 func Test_SetLoggerDevelopmentMust(t *testing.T) {
 	SetLoggerDevelopmentMust()
 	defer Sync()
+	Debug("hoge")
+	Debug("hoge")
+	Debug("hoge")
+	Debug("hoge")
 	Debug("hoge")
 	Info("hoge")
 	Warn("hoge")
