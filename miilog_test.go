@@ -24,6 +24,15 @@ func Test_SetLoggerDevelopmentMust(t *testing.T) {
 	Info("hoge")
 	Warn("hoge")
 	Error("hoge")
+	SetWrappers("hoge", "fuga")
+	Debug("hoge")
+	Debug("hoge")
+	Debug("hoge")
+	Debug("hoge")
+	Debug("hoge")
+	Info("hoge")
+	Warn("hoge")
+	Error("hoge")
 }
 
 func Test_SetLoggerProductionWithFileAndLokiMust(t *testing.T) {
