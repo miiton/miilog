@@ -87,7 +87,7 @@ func SetLoggerProductionWithLokiMust(lokiURL, tenantID, labels string) {
 		zap.AddStacktrace(zap.ErrorLevel),
 	)
 	zap.ReplaceGlobals(logger)
-	setWrappers()
+	SetWrappers()
 }
 
 // SetLoggerProductionWithFileAndLokiMust set a logger for global.
@@ -122,7 +122,7 @@ func SetLoggerProductionWithFileAndLokiMust(filePath, lokiURL, tenantID, labels 
 		zap.AddStacktrace(zap.ErrorLevel),
 	)
 	zap.ReplaceGlobals(logger)
-	setWrappers()
+	SetWrappers()
 }
 
 // SetLoggerProductionMust set a logger for global.
@@ -145,7 +145,7 @@ func SetLoggerProductionMust() {
 		panic(err)
 	}
 	zap.ReplaceGlobals(logger)
-	setWrappers()
+	SetWrappers()
 }
 
 // SetLoggerDevelopmentMust set a logger for global.
@@ -168,30 +168,60 @@ func SetLoggerDevelopmentMust() {
 		panic(err)
 	}
 	zap.ReplaceGlobals(logger)
-	setWrappers()
+	SetWrappers()
 }
 
 var (
-	Sync   func() error
-	Debug  func(args ...interface{})
-	Debugw func(msg string, keysAndValues ...interface{})
-	Debugf func(template string, args ...interface{})
-	Info   func(args ...interface{})
-	Infow  func(msg string, keysAndValues ...interface{})
-	Infof  func(template string, args ...interface{})
-	Warn   func(args ...interface{})
-	Warnw  func(msg string, keysAndValues ...interface{})
-	Warnf  func(template string, args ...interface{})
-	Error  func(args ...interface{})
-	Errorw func(msg string, keysAndValues ...interface{})
-	Errorf func(template string, args ...interface{})
-	Fatal  func(args ...interface{})
-	Fatalw func(msg string, keysAndValues ...interface{})
-	Fatalf func(template string, args ...interface{})
+	Sync    func() error
+	Debug   func(args ...interface{})
+	Debugw  func(msg string, keysAndValues ...interface{})
+	Debugf  func(template string, args ...interface{})
+	Info    func(args ...interface{})
+	Infow   func(msg string, keysAndValues ...interface{})
+	Infof   func(template string, args ...interface{})
+	Warn    func(args ...interface{})
+	Warnw   func(msg string, keysAndValues ...interface{})
+	Warnf   func(template string, args ...interface{})
+	Error   func(args ...interface{})
+	Errorw  func(msg string, keysAndValues ...interface{})
+	Errorf  func(template string, args ...interface{})
+	Fatal   func(args ...interface{})
+	Fatalw  func(msg string, keysAndValues ...interface{})
+	Fatalf  func(template string, args ...interface{})
+	Panic   func(args ...interface{})
+	Panicw  func(msg string, keysAndValues ...interface{})
+	Panicf  func(template string, args ...interface{})
+	DPanic  func(args ...interface{})
+	DPanicw func(msg string, keysAndValues ...interface{})
+	DPanicf func(template string, args ...interface{})
 )
 
-func setWrappers() {
+func SetWrappers(args ...interface{}) {
 	Sync = zap.S().Sync
+	if len(args) > 0 {
+		Debug = zap.S().With(args...).Debug
+		Debugw = zap.S().With(args...).Debugw
+		Debugf = zap.S().With(args...).Debugf
+		Info = zap.S().With(args...).Info
+		Infow = zap.S().With(args...).Infow
+		Infof = zap.S().With(args...).Infof
+		Warn = zap.S().With(args...).Warn
+		Warnw = zap.S().With(args...).Warnw
+		Warnf = zap.S().With(args...).Warnf
+		Error = zap.S().With(args...).Error
+		Errorw = zap.S().With(args...).Errorw
+		Errorf = zap.S().With(args...).Errorf
+		Fatal = zap.S().With(args...).Fatal
+		Fatalw = zap.S().With(args...).Fatalw
+		Fatalf = zap.S().With(args...).Fatalf
+		Panic = zap.S().With(args...).Panic
+		Panicw = zap.S().With(args...).Panicw
+		Panicf = zap.S().With(args...).Panicf
+		DPanic = zap.S().With(args...).DPanic
+		DPanicw = zap.S().With(args...).DPanicw
+		DPanicf = zap.S().With(args...).DPanicf
+		return
+	}
 	Debug = zap.S().Debug
 	Debugw = zap.S().Debugw
 	Debugf = zap.S().Debugf
@@ -207,6 +237,12 @@ func setWrappers() {
 	Fatal = zap.S().Fatal
 	Fatalw = zap.S().Fatalw
 	Fatalf = zap.S().Fatalf
+	Panic = zap.S().Panic
+	Panicw = zap.S().Panicw
+	Panicf = zap.S().Panicf
+	DPanic = zap.S().DPanic
+	DPanicw = zap.S().DPanicw
+	DPanicf = zap.S().DPanicf
 }
 
 func init() {
